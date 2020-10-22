@@ -18,6 +18,7 @@ class_exclude = {
 class_arch = {
     'AMD64': 'amd64',
     'ARM64': 'arm64',
+    'PPC64': 'ppc64',
     'PPC64EL': 'ppc64el',
 }
 

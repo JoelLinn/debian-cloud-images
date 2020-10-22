@@ -71,6 +71,9 @@ ArchEnum = enum.Enum(  # type:ignore
         'arm64': {
             'fai_classes': ('ARM64', 'GRUB_EFI_ARM64'),
         },
+        'ppc64': {
+            'fai_classes': ('PPC64', 'GRUB_IEEE1275'),
+        },
         'ppc64el': {
             'fai_classes': ('PPC64EL', 'GRUB_IEEE1275'),
         },

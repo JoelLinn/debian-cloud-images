@@ -20,3 +20,9 @@ mount -t sysfs fai-sysfs $FAI_ROOT/sys
 mount --make-private $FAI_ROOT/sys
 
 $ROOTCMD apt-get -y update
+
+# Stupid hack because pmac-utils is not in the index but depended upon by grub-ieee1275.
+wget -O pmac-utils.deb http://deb.debian.org/debian-ports/pool-ppc64/main/p/pmac-utils/pmac-utils_1.1.3-27+ports_ppc64.deb
+mv pmac-utils.deb $FAI_ROOT/
+$ROOTCMD dpkg -i /pmac-utils.deb
+$ROOTCMD rm /pmac-utils.deb

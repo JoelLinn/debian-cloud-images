@@ -1,3 +1,3 @@
 release=sid
-FAI_DEBOOTSTRAP="$release $apt_cdn/debian/"
+FAI_DEBOOTSTRAP="$release $apt_cdn/debian-ports/"
 CLASS_BUILD="SID_BUILD"
