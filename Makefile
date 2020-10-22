@@ -15,6 +15,7 @@ image_%:
 	./bin/debian-cloud-images build \
 	  $(subst _, ,$*) \
 	  --build-id manual \
+	  --build-type official \
 	  --version $(shell date '+%Y%m%d%H%M') \
 	  --localdebs \
 	  --output $(DESTDIR) \
