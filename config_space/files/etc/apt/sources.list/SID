@@ -1,2 +1,2 @@
-deb {%apt_cdn%}/debian-ports sid main
-deb-src {%apt_cdn%}/debian-ports sid main
+deb {%apt_cdn%}/debian-ports {%SUITE%} main
+deb-src {%apt_cdn%}/debian-ports {%SUITE%} main

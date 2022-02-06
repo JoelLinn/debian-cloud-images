@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class RunFAI:
-    output_filenam: pathlib.Path
+    output_filename: pathlib.Path
     classes: List[str]
     size_gb: int
     env: Dict[str, str]
@@ -62,7 +62,7 @@ class RunFAI:
             '--verbose',
             '--hostname', 'debian',
             '--class', ','.join(self.classes),
-            '--size', str(self.size_gb),
+            '--size', f'{self.size_gb}G',
             '--cspace', fai_config_path,
             self.output_filename.as_posix(),
         )

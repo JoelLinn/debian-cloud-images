@@ -20,7 +20,7 @@ before_script:
 
 test flake8:
   stage: source test
-  image: debian:buster
+  image: debian:bullseye
   script:
     - >
       apt-get install --no-install-recommends -y
@@ -31,10 +31,11 @@ test mypy:
   stage: source test
   image: debian:bullseye
   script:
+    - apt-get build-dep -y ./
     - >
       apt-get install --no-install-recommends -y
       mypy
-    - mypy src
+    - mypy --namespace-packages src
   allow_failure: true
 
 test package:
@@ -48,9 +49,8 @@ test package:
     - DEB_BUILD_OPTIONS=nocheck dpkg-buildpackage -us -uc
     - lintian ../*.changes
 
-test pytest:
+.test pytest:
   stage: source test
-  image: debian:buster
   script:
     - >
       apt-get install --no-install-recommends -y
@@ -69,6 +69,14 @@ test pytest:
     reports:
       junit: junit.xml
 
+test pytest buster:
+  extends: .test pytest
+  image: debian:buster
+
+test pytest bullseye:
+  extends: .test pytest
+  image: debian:bullseye
+
 test pytest latest:
   stage: source test
   image: python:slim
@@ -79,16 +87,20 @@ test pytest latest:
 
 .build:
   stage: build
-  image: debian:buster
+  image: debian:bullseye
   script:
-    - >
-      apt-get install --no-install-recommends -y
-      binfmt-support ca-certificates debsums dosfstools fai-server fai-setup-storage make python3-pytest qemu-user-static qemu-utils sudo udev
     - |
       if [ "$CI_DISPOSABLE_ENVIRONMENT" ]; then
         # Some of our build environments run with SELinux enabled, make sure it is detected by all the tools
         if [ -d /sys/fs/selinux ]; then mount -t selinuxfs none /sys/fs/selinux; mkdir -p /etc/selinux; touch /etc/selinux/config; fi
+        # Setup binfmt_misc for foreign binaries via qemu-user
+        if [ ! -e /proc/sys/fs/binfmt_misc/status ]; then
+          mount -t binfmt_misc binfmt_misc /proc/sys/fs/binfmt_misc
+        fi
       fi
+    - >
+      apt-get install --no-install-recommends -y
+      binfmt-support ca-certificates debsums dosfstools fai-server fai-setup-storage fdisk make python3-pytest qemu-user-static qemu-utils sudo udev
     - >
       echo
       debian-cloud-images build
@@ -129,34 +141,6 @@ test pytest latest:
   - if: '$CI_MERGE_REQUEST_ID == null'
     when: manual
 
-azure buster build:
-  extends: .azure build
-  variables:
-    CLOUD_ARCH: amd64
-    CLOUD_RELEASE: buster
-    CLOUD_VENDOR: azure
-
-azure buster-backports build:
-  extends: .azure build
-  variables:
-    CLOUD_ARCH: amd64
-    CLOUD_RELEASE: buster-backports
-    CLOUD_VENDOR: azure
-
-azure bullseye build:
-  extends: .azure build
-  variables:
-    CLOUD_ARCH: amd64
-    CLOUD_RELEASE: bullseye
-    CLOUD_VENDOR: azure
-
-azure sid build:
-  extends: .azure build
-  variables:
-    CLOUD_ARCH: amd64
-    CLOUD_RELEASE: sid
-    CLOUD_VENDOR: azure
-
 .ec2 build:
   extends: .build
   rules:
@@ -164,62 +148,6 @@ azure sid build:
     when: on_success
   - if: '$CI_MERGE_REQUEST_ID == null'
     when: manual
-
-ec2 buster amd64 build:
-  extends: .ec2 build
-  variables:
-    CLOUD_ARCH: amd64
-    CLOUD_RELEASE: buster
-    CLOUD_VENDOR: ec2
-
-ec2 buster-backports amd64 build:
-  extends: .ec2 build
-  variables:
-    CLOUD_ARCH: amd64
-    CLOUD_RELEASE: buster-backports
-    CLOUD_VENDOR: ec2
-
-ec2 bullseye amd64 build:
-  extends: .ec2 build
-  variables:
-    CLOUD_ARCH: amd64
-    CLOUD_RELEASE: bullseye
-    CLOUD_VENDOR: ec2
-
-ec2 sid amd64 build:
-  extends: .ec2 build
-  variables:
-    CLOUD_ARCH: amd64
-    CLOUD_RELEASE: sid
-    CLOUD_VENDOR: ec2
-
-ec2 buster arm64 build:
-  extends: .ec2 build
-  variables:
-    CLOUD_ARCH: arm64
-    CLOUD_RELEASE: buster
-    CLOUD_VENDOR: ec2
-
-ec2 buster-backports arm64 build:
-  extends: .ec2 build
-  variables:
-    CLOUD_ARCH: arm64
-    CLOUD_RELEASE: buster-backports
-    CLOUD_VENDOR: ec2
-
-ec2 bullseye arm64 build:
-  extends: .ec2 build
-  variables:
-    CLOUD_ARCH: arm64
-    CLOUD_RELEASE: bullseye
-    CLOUD_VENDOR: ec2
-
-ec2 sid arm64 build:
-  extends: .ec2 build
-  variables:
-    CLOUD_ARCH: arm64
-    CLOUD_RELEASE: sid
-    CLOUD_VENDOR: ec2
 
 .gce build:
   extends: .build
@@ -229,27 +157,6 @@ ec2 sid arm64 build:
   - if: '$CI_MERGE_REQUEST_ID == null'
     when: manual
 
-gce buster build:
-  extends: .gce build
-  variables:
-    CLOUD_ARCH: amd64
-    CLOUD_RELEASE: buster
-    CLOUD_VENDOR: gce
-
-gce bullseye build:
-  extends: .gce build
-  variables:
-    CLOUD_ARCH: amd64
-    CLOUD_RELEASE: bullseye
-    CLOUD_VENDOR: gce
-
-gce sid build:
-  extends: .gce build
-  variables:
-    CLOUD_ARCH: amd64
-    CLOUD_RELEASE: sid
-    CLOUD_VENDOR: gce
-
 .generic build:
   extends: .build
   rules:
@@ -258,89 +165,13 @@ gce sid build:
   - if: '$CI_MERGE_REQUEST_ID == null'
     when: manual
 
-generic buster amd64 build:
-  extends: .generic build
-  variables:
-    CLOUD_ARCH: amd64
-    CLOUD_RELEASE: buster
-    CLOUD_VENDOR: generic
-
-generic bullseye amd64 build:
-  extends: .generic build
-  variables:
-    CLOUD_ARCH: amd64
-    CLOUD_RELEASE: bullseye
-    CLOUD_VENDOR: generic
-
-generic sid amd64 build:
-  extends: .generic build
-  variables:
-    CLOUD_ARCH: amd64
-    CLOUD_RELEASE: sid
-    CLOUD_VENDOR: generic
-
-generic buster arm64 build:
-  extends: .generic build
-  variables:
-    CLOUD_ARCH: arm64
-    CLOUD_RELEASE: buster
-    CLOUD_VENDOR: generic
-
-generic bullseye arm64 build:
-  extends: .generic build
-  variables:
-    CLOUD_ARCH: arm64
-    CLOUD_RELEASE: bullseye
-    CLOUD_VENDOR: generic
-
-generic sid arm64 build:
-  extends: .generic build
-  variables:
-    CLOUD_ARCH: arm64
-    CLOUD_RELEASE: sid
-    CLOUD_VENDOR: generic
-
-generic buster ppc64el build:
-  extends: .generic build
-  variables:
-    CLOUD_ARCH: ppc64el
-    CLOUD_RELEASE: buster
-    CLOUD_VENDOR: generic
-
-generic bullseye ppc64el build:
-  extends: .generic build
-  variables:
-    CLOUD_ARCH: ppc64el
-    CLOUD_RELEASE: bullseye
-    CLOUD_VENDOR: generic
-
-generic sid ppc64el build:
-  extends: .generic build
-  variables:
-    CLOUD_ARCH: ppc64el
-    CLOUD_RELEASE: sid
-    CLOUD_VENDOR: generic
-
-genericcloud buster amd64 build:
-  extends: .generic build
-  variables:
-    CLOUD_ARCH: amd64
-    CLOUD_RELEASE: buster
-    CLOUD_VENDOR: genericcloud
-
-genericcloud bullseye amd64 build:
-  extends: .generic build
-  variables:
-    CLOUD_ARCH: amd64
-    CLOUD_RELEASE: bullseye
-    CLOUD_VENDOR: genericcloud
-
-genericcloud sid amd64 build:
-  extends: .generic build
-  variables:
-    CLOUD_ARCH: amd64
-    CLOUD_RELEASE: sid
-    CLOUD_VENDOR: genericcloud
+.genericcloud build:
+  extends: .build
+  rules:
+  - if: '$CI_MERGE_REQUEST_ID == null && $BUILD_GENERIC'
+    when: on_success
+  - if: '$CI_MERGE_REQUEST_ID == null'
+    when: manual
 
 .nocloud build:
   extends: .build
@@ -350,86 +181,18 @@ genericcloud sid amd64 build:
   - if: '$CI_MERGE_REQUEST_ID == null'
     when: manual
 
-nocloud buster amd64 build:
-  extends: .nocloud build
-  variables:
-    CLOUD_ARCH: amd64
-    CLOUD_RELEASE: buster
-    CLOUD_VENDOR: nocloud
-
-nocloud bullseye amd64 build:
-  extends: .nocloud build
-  variables:
-    CLOUD_ARCH: amd64
-    CLOUD_RELEASE: bullseye
-    CLOUD_VENDOR: nocloud
-
-nocloud sid amd64 build:
-  extends: .nocloud build
-  variables:
-    CLOUD_ARCH: amd64
-    CLOUD_RELEASE: sid
-    CLOUD_VENDOR: nocloud
-
-nocloud buster arm64 build:
-  extends: .nocloud build
-  variables:
-    CLOUD_ARCH: arm64
-    CLOUD_RELEASE: buster
-    CLOUD_VENDOR: nocloud
-
-nocloud bullseye arm64 build:
-  extends: .nocloud build
-  variables:
-    CLOUD_ARCH: arm64
-    CLOUD_RELEASE: bullseye
-    CLOUD_VENDOR: nocloud
-
-nocloud sid arm64 build:
-  extends: .nocloud build
-  variables:
-    CLOUD_ARCH: arm64
-    CLOUD_RELEASE: sid
-    CLOUD_VENDOR: nocloud
-
-nocloud buster ppc64el build:
-  extends: .nocloud build
-  variables:
-    CLOUD_ARCH: ppc64el
-    CLOUD_RELEASE: buster
-    CLOUD_VENDOR: nocloud
-
-nocloud bullseye ppc64el build:
-  extends: .nocloud build
-  variables:
-    CLOUD_ARCH: ppc64el
-    CLOUD_RELEASE: bullseye
-    CLOUD_VENDOR: nocloud
-
-nocloud sid ppc64el build:
-  extends: .nocloud build
-  variables:
-    CLOUD_ARCH: ppc64el
-    CLOUD_RELEASE: sid
-    CLOUD_VENDOR: nocloud
-
 ####
 # Provider uploads for developer pushs
 ####
 
-azure upload:
+.azure upload:
   stage: vendor upload
-  image: debian:buster
+  image: debian:bullseye
   script:
     - >
       ./bin/debian-cloud-images upload-azure
       --config-file "${CLOUD_UPLOAD_DEV_CONFIG}"
       *.build.json
-  dependencies:
-    - azure buster build
-    - azure buster-backports build
-    - azure bullseye build
-    - azure sid build
   artifacts:
     name: upload-azure
     expire_in: 7 days
@@ -442,23 +205,14 @@ azure upload:
     when: manual
   allow_failure: true
 
-ec2 upload:
+.ec2 upload:
   stage: vendor upload
-  image: debian:buster
+  image: debian:bullseye
   script:
     - >
       ./bin/debian-cloud-images upload-ec2
       --config-file "${CLOUD_UPLOAD_DEV_CONFIG}"
       *.build.json
-  dependencies:
-    - ec2 buster amd64 build
-    - ec2 buster-backports amd64 build
-    - ec2 bullseye amd64 build
-    - ec2 sid amd64 build
-    - ec2 buster arm64 build
-    - ec2 buster-backports arm64 build
-    - ec2 bullseye arm64 build
-    - ec2 sid arm64 build
   artifacts:
     name: upload-ec2
     expire_in: 7 days
@@ -471,18 +225,14 @@ ec2 upload:
     when: manual
   allow_failure: true
 
-gce upload:
+.gce upload:
   stage: vendor upload
-  image: debian:buster
+  image: debian:bullseye
   script:
     - >
       ./bin/debian-cloud-images upload-gce
       --config-file "${CLOUD_UPLOAD_DEV_CONFIG}"
       *.build.json
-  dependencies:
-    - gce buster build
-    - gce bullseye build
-    - gce sid build
   artifacts:
     name: upload-gce
     expire_in: 7 days
@@ -494,3 +244,6 @@ gce upload:
   - if: '$CI_MERGE_REQUEST_ID == null && $CLOUD_UPLOAD_GCE_DEV_ENABLED == "1"'
     when: manual
   allow_failure: true
+
+include:
+  local: .gitlab/ci/generated.yml

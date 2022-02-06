@@ -5,6 +5,7 @@ import typing
 
 from ..utils import argparse_ext
 from ..utils.config import Config
+from ..utils.config_image import ConfigImageLoader
 
 
 class BaseCommand:
@@ -85,6 +86,10 @@ class BaseCommand:
         else:
             self.config = self._config[None]
 
+        self._config_image = ConfigImageLoader()
+        self._config_image.read_defaults()
+        self.config_image = self._config_image.config
+
         self.argparser = argparser
 
     def __call__(self):
@@ -105,6 +110,8 @@ class BaseCommand:
             ret, 'AWS_ACCESS_KEY_ID', 'ec2.auth.key')
         self.__config_env_compat(
             ret, 'AWS_SECRET_ACCESS_KEY', 'ec2.auth.secret')
+        self.__config_env_compat(
+            ret, 'AWS_SESSION_TOKEN', 'ec2.auth.token')
         self.__config_env_compat(
             ret, 'GOOGLE_APPLICATION_CREDENTIALS', 'gce.auth.credentialsfile')
 

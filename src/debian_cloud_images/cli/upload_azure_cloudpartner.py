@@ -303,7 +303,8 @@ class ImageUploaderAzureCloudpartner:
                     raise RuntimeError('Error creating file: {0.error} ({0.status})'.format(r))
 
                 for chunk in chunked:
-                    self.upload_file_chunk(path, lease, chunk)
+                    if chunk.is_data:
+                        self.upload_file_chunk(path, lease, chunk)
 
     def upload_file_chunk(self, path, lease, chunk):
         """ Upload a single block up to 4MB to Azure storage """
@@ -387,8 +388,8 @@ class UploadAzureCloudpartnerCommand(UploadBaseCommand):
     argparser_help = 'upload Debian images for publishing via Azure Cloud Partner interface'
     argparser_epilog = '''
 config options:
-  azure.auth.client
-  azure.auth.secret
+  azure.auth.client     application ID of service account, or empty for using az
+  azure.auth.secret     secret of service account, or empty for using az
   azure.cloudpartner.tenant
   azure.cloudpartner.publisher
                        Azure publisher
@@ -416,8 +417,8 @@ config options:
         super().__init__(**kw)
 
         auth = AzureAuth(
-            client=str(self.config_get('azure.auth.client')),
-            secret=self.config_get('azure.auth.secret'),
+            client=str(self.config_get('azure.auth.client', default=None)),
+            secret=self.config_get('azure.auth.secret', default=None),
         )
         cloudpartner = AzureCloudpartner(
             tenant=str(self.config_get('azure.cloudpartner.tenant')),
