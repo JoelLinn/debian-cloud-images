@@ -1,12 +1,18 @@
 # Create ppc64 image
 
-```
-  # git clone https://github.com/JoelLinn/debian-cloud-images.git
-  # sudo apt install --no-install-recommends ca-certificates debsums dosfstools \
-    fai-server fai-setup-storage make python3 python3-libcloud python3-marshmallow \
-    python3-pytest python3-yaml qemu-utils udev \
-    debian-ports-archive-keyring qemu-user-static binfmt-support
-  # make image_sid_genericcloud_ppc64
+```sh
+git clone https://github.com/JoelLinn/debian-cloud-images.git
+# When building on ppc64 itself, qemu-user-static and binfmt-support are not needed:
+sudo apt install --no-install-recommends ca-certificates debsums dosfstools \
+  fai-server fai-setup-storage make python3 python3-libcloud python3-marshmallow \
+  python3-pytest python3-yaml qemu-utils udev \
+  debian-ports-archive-keyring qemu-user-static binfmt-support
+# Build the image:
+make image_sid_genericcloud_ppc64
+# Convert it into smaller qcow2 format:
+qemu-img convert -f raw -O qcow2 -c -o compat=1.1 \
+  image_sid_genericcloud_ppc64.raw \
+  image_sid_genericcloud_ppc64.qcow2
 ```
 
 # FAI Cloud image builder
