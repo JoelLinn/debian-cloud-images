@@ -2,12 +2,16 @@
 stages:
   - source test
   - build
-  - vendor upload
-  - upload
 
 variables:
   CLOUD_IMAGE_BUILD_ID: ${CI_PROJECT_NAMESPACE}-${CI_COMMIT_REF_SLUG}
   GIT_DEPTH: "1"
+
+workflow:
+  rules:
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    when: never
+  - when: always
 
 before_script:
   - apt-get update
@@ -18,76 +22,69 @@ before_script:
       mount -t tmpfs none /tmp
     fi
 
-test flake8:
-  stage: source test
-  image: debian:bullseye
-  script:
-    - >
-      apt-get install --no-install-recommends -y
-      python3-flake8
-    - python3 -m flake8
-
-test mypy:
-  stage: source test
-  image: debian:bullseye
-  script:
-    - apt-get build-dep -y ./
-    - >
-      apt-get install --no-install-recommends -y
-      mypy
-    - mypy --namespace-packages src
-  allow_failure: true
-
 test package:
   stage: source test
-  image: debian:bullseye
+  image: debian:bookworm
+  before_script:
+  - apt-get update
+  - apt-get build-dep -y ./package
+  - apt-get install --no-install-recommends -y lintian
   script:
-    - apt-get build-dep -y ./
-    - >
-      apt-get install --no-install-recommends -y
-      lintian
-    - DEB_BUILD_OPTIONS=nocheck dpkg-buildpackage -us -uc
-    - lintian ../*.changes
+  - cd package
+  - for arch in amd64 arm64 ppc64el; do dpkg-buildpackage -us -uc -a$arch; done
+  - lintian ../*.changes
 
-.test pytest:
+.test python:
   stage: source test
   script:
-    - >
-      apt-get install --no-install-recommends -y
-      python3-pytest python3-pytest-cov
-    - >
-      PYTHONPATH=src
-      py.test-3
-      -vrxXs
-      --color=yes
-      --cov=src --cov-report=term --cov-report=html:coverage
-      --junit-xml=junit.xml
-      tests
-  artifacts:
-    paths:
-      - coverage/
-    reports:
-      junit: junit.xml
+  - >
+    apt-get install --no-install-recommends -y
+    python3-pytest python3-requests-mock
+  - >
+    PYTHONPATH=src
+    py.test-3
+    -vrxXs
+    --color=yes
+    tests
 
-test pytest buster:
-  extends: .test pytest
-  image: debian:buster
-
-test pytest bullseye:
-  extends: .test pytest
+test python bullseye:
+  extends: .test python
   image: debian:bullseye
 
-test pytest latest:
+test python bookworm:
+  extends: .test python
+  image: debian:bookworm
+
+test python latest:
   stage: source test
   image: python:slim
   before_script:
-    - pip install -e .
+  - pip install -e .[mypy,tests] "flake8<5" pytest pytest-cov pytest-flake8 pytest-mypy
   script:
-    - python3 ./setup.py pytest
+  - >
+    pytest
+    -vrxXs
+    --color=yes
+    --cov=src --cov-report=term --cov-report=html:coverage
+    --flake8
+    --mypy
+    --junit-xml=junit.xml
+  artifacts:
+    paths:
+    - coverage/
+    reports:
+      junit: junit.xml
+
+####
+# Builds for developer uploads pushes
+#
+# Builds are run if
+# - the manual jobs are started.
+####
 
 .build:
   stage: build
-  image: debian:bullseye
+  image: debian:bookworm
   script:
     - |
       if [ "$CI_DISPOSABLE_ENVIRONMENT" ]; then
@@ -123,126 +120,7 @@ test pytest latest:
       - '*.tar.xz'
     reports:
       junit: '*.build.junit.xml'
-  allow_failure: true
-
-####
-# Builds for developer uploads pushes
-#
-# Builds are run if
-# - it is requested by setting $BUILD_AZURE, $BUILD_EC2, $BUILD_GCE, $BUILD_GENERIC or $BUILD_NOCLOUD or
-# - the manual jobs are started.
-####
-
-.azure build:
-  extends: .build
-  rules:
-  - if: '$CI_MERGE_REQUEST_ID == null && $BUILD_AZURE'
-    when: on_success
-  - if: '$CI_MERGE_REQUEST_ID == null'
-    when: manual
-
-.ec2 build:
-  extends: .build
-  rules:
-  - if: '$CI_MERGE_REQUEST_ID == null && $BUILD_EC2'
-    when: on_success
-  - if: '$CI_MERGE_REQUEST_ID == null'
-    when: manual
-
-.gce build:
-  extends: .build
-  rules:
-  - if: '$CI_MERGE_REQUEST_ID == null && $BUILD_GCE'
-    when: on_success
-  - if: '$CI_MERGE_REQUEST_ID == null'
-    when: manual
-
-.generic build:
-  extends: .build
-  rules:
-  - if: '$CI_MERGE_REQUEST_ID == null && $BUILD_GENERIC'
-    when: on_success
-  - if: '$CI_MERGE_REQUEST_ID == null'
-    when: manual
-
-.genericcloud build:
-  extends: .build
-  rules:
-  - if: '$CI_MERGE_REQUEST_ID == null && $BUILD_GENERIC'
-    when: on_success
-  - if: '$CI_MERGE_REQUEST_ID == null'
-    when: manual
-
-.nocloud build:
-  extends: .build
-  rules:
-  - if: '$CI_MERGE_REQUEST_ID == null && $BUILD_NOCLOUD'
-    when: on_success
-  - if: '$CI_MERGE_REQUEST_ID == null'
-    when: manual
-
-####
-# Provider uploads for developer pushs
-####
-
-.azure upload:
-  stage: vendor upload
-  image: debian:bullseye
-  script:
-    - >
-      ./bin/debian-cloud-images upload-azure
-      --config-file "${CLOUD_UPLOAD_DEV_CONFIG}"
-      *.build.json
-  artifacts:
-    name: upload-azure
-    expire_in: 7 days
-    paths:
-      - '*.upload-azure.json'
-  rules:
-  - if: '$CI_MERGE_REQUEST_ID == null && $CLOUD_UPLOAD_AZURE_DEV_ENABLED == "1" && $BUILD_AZURE'
-    when: on_success
-  - if: '$CI_MERGE_REQUEST_ID == null && $CLOUD_UPLOAD_AZURE_DEV_ENABLED == "1"'
-    when: manual
-  allow_failure: true
-
-.ec2 upload:
-  stage: vendor upload
-  image: debian:bullseye
-  script:
-    - >
-      ./bin/debian-cloud-images upload-ec2
-      --config-file "${CLOUD_UPLOAD_DEV_CONFIG}"
-      *.build.json
-  artifacts:
-    name: upload-ec2
-    expire_in: 7 days
-    paths:
-      - '*.upload-ec2.json'
-  rules:
-  - if: '$CI_MERGE_REQUEST_ID == null && $CLOUD_UPLOAD_EC2_DEV_ENABLED == "1" && $BUILD_EC2'
-    when: on_success
-  - if: '$CI_MERGE_REQUEST_ID == null && $CLOUD_UPLOAD_EC2_DEV_ENABLED == "1"'
-    when: manual
-  allow_failure: true
-
-.gce upload:
-  stage: vendor upload
-  image: debian:bullseye
-  script:
-    - >
-      ./bin/debian-cloud-images upload-gce
-      --config-file "${CLOUD_UPLOAD_DEV_CONFIG}"
-      *.build.json
-  artifacts:
-    name: upload-gce
-    expire_in: 7 days
-    paths:
-      - '*.upload-gce.json'
-  rules:
-  - if: '$CI_MERGE_REQUEST_ID == null && $CLOUD_UPLOAD_GCE_DEV_ENABLED == "1" && $BUILD_GCE'
-    when: on_success
-  - if: '$CI_MERGE_REQUEST_ID == null && $CLOUD_UPLOAD_GCE_DEV_ENABLED == "1"'
-    when: manual
+  needs: []
   allow_failure: true
 
 include:

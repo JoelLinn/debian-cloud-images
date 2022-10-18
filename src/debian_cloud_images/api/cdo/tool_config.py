@@ -1,3 +1,5 @@
+import typing
+
 from marshmallow import Schema, fields, post_load
 
 from ..meta import TypeMeta, v1_ObjectMetaSchema, v1_TypeMetaSchema
@@ -11,6 +13,13 @@ class v1alpha1_ToolConfigAzureAuthSchema(Schema):
 
 class v1alpha1_ToolConfigAzureCloudpartnerSchema(Schema):
     publisher = fields.Str()
+    tenant = fields.UUID()
+
+
+class v1alpha1_ToolConfigAzureComputegallerySchema(Schema):
+    group = fields.Str()
+    name = fields.Str()
+    subscription = fields.UUID()
     tenant = fields.UUID()
 
 
@@ -29,6 +38,7 @@ class v1alpha1_ToolConfigAzureStorageSchema(Schema):
 
 class v1alpha1_ToolConfigAzureSchema(Schema):
     auth = fields.Nested(v1alpha1_ToolConfigAzureAuthSchema)
+    computegallery = fields.Nested(v1alpha1_ToolConfigAzureComputegallerySchema)
     cloudpartner = fields.Nested(v1alpha1_ToolConfigAzureCloudpartnerSchema)
     image = fields.Nested(v1alpha1_ToolConfigAzureImageSchema)
     storage = fields.Nested(v1alpha1_ToolConfigAzureStorageSchema)
@@ -88,7 +98,7 @@ class v1alpha1_ToolConfigSchema(v1_TypeMetaSchema):
     gce = fields.Nested(v1alpha1_ToolConfigGceSchema)
 
     @post_load
-    def load_obj(self, data, **kw):
+    def load_obj(self, data: dict[str, typing.Any], **kw) -> dict[str, typing.Any]:
         data.pop('api_version', None)
         data.pop('kind', None)
         return data

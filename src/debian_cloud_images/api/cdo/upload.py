@@ -1,15 +1,18 @@
+import dataclasses
+import typing
+
 from marshmallow import Schema, fields, pre_dump, post_load
 
 from ..meta import ObjectMeta, TypeMeta, v1_ObjectMetaSchema, v1_TypeMetaSchema
 from ..registry import registry as _registry
 
 
+@dataclasses.dataclass
 class Upload:
-    def __init__(self, provider, ref, family_ref=None, metadata=None):
-        self.provider = provider
-        self.ref = ref
-        self.family_ref = family_ref
-        self.metadata = metadata or ObjectMeta()
+    provider: str
+    ref: str
+    family_ref: typing.Optional[str] = dataclasses.field(default=None)
+    metadata: ObjectMeta = dataclasses.field(default_factory=ObjectMeta)
 
 
 class v1alpha1_UploadDataSchema(Schema):
@@ -27,9 +30,9 @@ class v1alpha1_UploadSchema(v1_TypeMetaSchema):
     data = fields.Nested(v1alpha1_UploadDataSchema)
 
     @pre_dump
-    def dump_items(self, data, **kw):
+    def dump_items(self, data: Upload, **kw) -> dict[str, typing.Any]:
         return {'metadata': data.metadata, 'data': data}
 
     @post_load
-    def load_obj(self, data, **kw):
-        return self.__model__(metadata=data['metadata'], **data['data'])
+    def load_obj(self, data: dict[str, typing.Any], **kw) -> Upload:
+        return Upload(metadata=data['metadata'], **data['data'])

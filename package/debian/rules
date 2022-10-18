@@ -1,0 +1,15 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+update: debian/source.substvars
+	@true
+
+debian/source.substvars:
+	debian/bin/make-substvars > debian/source.substvars
+
+override_dh_gencontrol:
+	dh_gencontrol -- -Tdebian/source.substvars
+
+.PHONY: debian/source.substvars

@@ -1,3 +1,0 @@
-Package: linux-* initramfs-tools
-Pin: release n={%release%}-backports
-Pin-Priority: 500

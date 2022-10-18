@@ -1,0 +1,130 @@
+debian-cloud-images (0.0.7) UNRELEASED; urgency=medium
+
+  * Move source package lintian overrides to debian/source.
+  * Bump debhelper from old 12 to 13.
+
+ -- Debian Janitor <janitor@jelmer.uk>  Tue, 13 Sep 2022 05:33:30 -0000
+
+debian-cloud-images (0.0.6) unstable; urgency=medium
+
+  * Restrict vendor packages by architecture.
+  * Workaround piuparts choking.
+
+ -- Bastian Blank <waldi@debian.org>  Sat, 14 May 2022 12:42:45 +0200
+
+debian-cloud-images (0.0.5) unstable; urgency=medium
+
+  * Only build dependency package.
+  * Include more package dependencies.
+
+ -- Bastian Blank <waldi@debian.org>  Fri, 13 May 2022 21:23:05 +0200
+
+debian-cloud-images (0.0.4) unstable; urgency=medium
+
+  [ Debian Janitor ]
+  * Use secure copyright file specification URI.
+  * Bump debhelper from deprecated 9 to 12.
+  * Set debhelper-compat version in Build-Depends.
+  * Update standards version to 4.2.1, no changes needed.
+
+  [ Bastian Blank ]
+  * Add base implementation for public images
+  * Add image writing to public images
+  * Use new public images for uploading
+  * Move pre-existing versions out of the way
+  * Record digest of public images
+  * Write per-version file with sha512 checksums
+  * Handle temporary directory ourselves
+  * Set permissions for all files in public upload
+
+  [ Noah Meyerhans ]
+  * Install amazon-ec2-utils on bullsye and sid EC2 AMIs
+  * Remount root rw before running systemd-growfs
+  * makefile: fix clean rule
+
+  [ Bastian Blank ]
+  * Don't longer install python on Bullseye
+  * Use new qcow2 compatibility
+  * Test package on Bullseye
+  * Disable FAI ramdisk handling
+  * Override mount handling
+  * Check for empty /proc, /run and /sys
+  * Drop support for Stretch
+  * Make sure we actually run apt-get update
+  * Only apply io scheduler settings on Buster
+  * Don't override disk scheduler with only value
+
+  [ Noah Meyerhans ]
+  * [arm64] enable the use of the cloud kernel with buster-backports
+  * Add ec2 buster-backports builds to salsa pipeline cfg
+
+  [ Bastian Blank ]
+  * Add skeleton new Azure Partner image support
+  * Add base new Azure Partner cleanup support
+  * Prepare commit of Azure Partner offer
+  * Support commit of Azure Partner offer
+
+  [ Sven Bartscher ]
+  * Install resolvconf in GENERIC images
+  * Keep /etc/resolv.conf if it links to resolvconf
+  * Test absence or symlink state of /etc/resolv.conf
+
+  [ Bastian Blank ]
+  * Use cloud-init on Azure
+  * Also disable cloud-init network on Azure
+
+  [ Noah Meyerhans ]
+  * Enable EXTRAS for bullseye
+  * Call dist-upgrade in hooks/updatebase
+
+  [ Zach Marano ]
+  * Enable fsck checks on the root filesystem.
+
+  [ Bastian Blank ]
+  * Fix flake8 failures
+  * Run tests with Buster and Bullseye
+  * Run all Bullseye and Sid builds on Bullseye
+  * Run uploads on Bullseye
+  * Make sure we have sfdisk available
+  * Make sure binfmt-support can work
+  * Install all Python modules for mypy to check
+  * Ask mypy to read all namespace packages
+  * Add support for Azure auth via az tool
+  * Allow Azure auth against subscription alone
+  * Allow Azure usage without service account
+  * Pull in new hyperv-daemons package
+  * Drop all the unused debconf definitions
+
+  [ Zach Marano ]
+  * Update the google packages keyring.
+
+  [ Bastian Blank ]
+  * Remove old Vagrant stuff
+  * Drop all support for grub-pc
+  * Use modern xunit2 format for test result
+  * Support EC2 token auth
+  * Add image version abstraction
+  * Remove not required comparison
+  * Add EC2 cleanup support
+
+ -- Noah Meyerhans <noahm@debian.org>  Fri, 12 Mar 2021 10:45:56 -0800
+
+debian-cloud-images (0.0.3) unstable; urgency=medium
+
+  * Fix Vcs links in debian/control
+  * Add lintian overrides for issues within the FAI config space.
+
+ -- Noah Meyerhans <noahm@debian.org>  Wed, 08 Jan 2020 11:05:46 -0800
+
+debian-cloud-images (0.0.2) unstable; urgency=medium
+
+  * New release snapshot includes the official buster release support.
+  * Update package description in debian/control. (Closes: #935906)
+
+ -- Noah Meyerhans <noahm@debian.org>  Mon, 06 Jan 2020 12:42:32 -0800
+
+debian-cloud-images (0.0.1) unstable; urgency=medium
+
+  * Initial package (Closes: #910706).
+
+ -- Thomas Goirand <zigo@debian.org>  Tue, 09 Oct 2018 22:42:14 +0200

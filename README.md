@@ -4,7 +4,7 @@
 git clone https://github.com/JoelLinn/debian-cloud-images.git
 # When building on ppc64 itself, qemu-user-static and binfmt-support are not needed:
 sudo apt install --no-install-recommends ca-certificates debsums dosfstools \
-  fai-server fai-setup-storage make python3 python3-libcloud python3-marshmallow \
+  fai-server fai-setup-storage fdisk make python3 python3-libcloud python3-marshmallow \
   python3-pytest python3-yaml qemu-utils udev \
   debian-ports-archive-keyring qemu-user-static binfmt-support
 # Build the image:
@@ -29,7 +29,7 @@ You also need python3-libcloud from Buster or newer.
 ```
   # git clone https://salsa.debian.org/cloud-team/debian-cloud-images.git
   # sudo apt install --no-install-recommends ca-certificates debsums dosfstools \
-    fai-server fai-setup-storage make python3 python3-libcloud python3-marshmallow \
+    fai-server fai-setup-storage fdisk make python3 python3-libcloud python3-marshmallow \
     python3-pytest python3-yaml qemu-utils udev
 ```
 
@@ -108,66 +108,3 @@ mostly everywhere. If you really need adjustments for your image, start looking
 at the directory structure and only drop in adjustments where really required.
 Our CLOUD (base) class should already take care of the most of what is needed
 for a cloud image.
-
-## Uploader
-
-Uploaders typically need some variables set with credentials or targets.
-
- * `$CLOUD_UPLOAD_DEV_CONFIG`: File variable containing a config file.
-
-### Amazon EC2
-
- * `$CLOUD_UPLOAD_EC2_DEV_ENABLED`: Set to `1` to upload and create images during development.
- * `$AWS_ACCESS_KEY_ID`
- * `$AWS_SECRET_ACCESS_KEY`
-
-```
----
-ec2:
-  image:
-    regions:
-    - REGION
-    tags:
-    - TAG=VALUE
-  storage:
-    name: BUCKET
-```
-
-### Google Compute Engine
-
- * `$GOOGLE_APPLICATION_CREDENTIALS`: File variable containing service account credentials.
- * `$CLOUD_UPLOAD_GCE_DEV_ENABLED`: Set to `1` to upload and create images during development.
-
-#### Config file example
-
-```
----
-gce:
-  image:
-    project: project
-  storage:
-    name: NAME
-```
-
-### Microsoft Azure
-
- * `$CLOUD_UPLOAD_AZURE_DEV_ENABLED`: Set to `1` to upload images during development.
-
-#### Config file example
-
-```
----
-azure:
-  auth:
-    client: OBJECT
-    secret: SECRET
-  image:
-    tenant: TENANT
-    subscription: SUBSCRIPTION
-    group: GROUP
-  storage:
-    tenant: TENANT
-    subscription: SUBSCRIPTION
-    group: GROUP
-    name: NAME
-```

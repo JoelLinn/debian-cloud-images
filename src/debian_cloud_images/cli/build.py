@@ -12,7 +12,7 @@ from .base import BaseCommand
 from ..build.fai import RunFAI
 from ..build.manifest import CreateManifest
 from ..build.tar import RunTar
-from ..data import data_path
+from ..resources import path as resources_path
 from ..utils import argparse_ext
 
 
@@ -52,6 +52,15 @@ class Classes(collections.abc.MutableSet):
         logger.info('Removing class %s', v)
         self.__data.remove(v)
 
+    def update_combine(self, *others):
+        new = []
+        for other in others:
+            for o in other:
+                for i in self.__data:
+                    new.append('+'.join((i, o)))
+                new.append(o)
+        self.__data.extend(new)
+
 
 class Check:
     def __init__(self):
@@ -64,24 +73,24 @@ class Check:
     def set_type(self, _type):
         self.type = _type
         self.info['type'] = self.type.name
-        self.classes |= self.type.fai_classes
+        self.classes.update_combine(self.type.fai_classes)
 
     def set_release(self, release):
         self.release = release
         self.info['release'] = self.release.basename
         self.info['release_id'] = self.release.id
         self.info['release_baseid'] = self.release.baseid
-        self.classes |= self.release.fai_classes
+        self.classes.update_combine(self.release.fai_classes)
 
     def set_vendor(self, vendor):
         self.vendor = vendor
         self.env['CLOUD_RELEASE_ID'] = self.info['vendor'] = self.vendor.name
-        self.classes |= self.vendor.fai_classes
+        self.classes.update_combine(self.vendor.fai_classes)
 
     def set_arch(self, arch):
         self.arch = arch
         self.info['arch'] = arch.name
-        self.classes |= arch.fai_classes
+        self.classes.update_combine(arch.fai_classes)
 
     def set_version(self, version, version_date, build_id):
         self.build_id = self.info['build_id'] = build_id.id
@@ -100,10 +109,6 @@ class Check:
             self.env['CLOUD_RELEASE_VERSION_AZURE'] = self.info['version_azure'] = self.version_azure
 
     def check(self):
-        if self.arch.name in self.release.arch_supports_linux_image_cloud and self.vendor.use_linux_image_cloud:
-            self.classes.add('LINUX_IMAGE_CLOUD')
-        else:
-            self.classes.add('LINUX_IMAGE_BASE')
         self.classes.add('LAST')
 
 
@@ -241,7 +246,7 @@ class BuildCommand(BaseCommand):
         self.env['CLOUD_BUILD_INFO'] = json.dumps(self.c.info)
         self.env['CLOUD_BUILD_NAME'] = name
         self.env['CLOUD_BUILD_OUTPUT_DIR'] = output.resolve()
-        self.env['CLOUD_BUILD_DATA'] = data_path
+        self.env['CLOUD_BUILD_SYSTEM_TESTS'] = resources_path('system_tests').as_posix()
 
         output.mkdir(parents=True, exist_ok=True)
 
@@ -252,6 +257,7 @@ class BuildCommand(BaseCommand):
 
         self.fai = RunFAI(
             output_filename=image_raw,
+            release=self.c.release.basename,
             classes=self.c.classes,
             size_gb=self.c.vendor.size,
             env=self.env,

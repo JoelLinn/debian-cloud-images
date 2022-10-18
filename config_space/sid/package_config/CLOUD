@@ -1,0 +1,32 @@
+PACKAGES install-norec
+openssh-server
+cloud-initramfs-growroot
+sudo
+
+# needed for any useful login session
+libpam-systemd
+
+libnss-resolve
+netplan.io
+
+unattended-upgrades
+
+# Recommends of linux-image-*
+apparmor
+
+# Packages from important
+apt-utils
+init
+iptables
+iputils-ping
+less
+nano
+netbase
+vim-tiny
+whiptail
+
+PACKAGES install-norec TIME_CHRONY
+chrony
+
+PACKAGES install-norec TIME_SYSTEMD
+systemd-timesyncd

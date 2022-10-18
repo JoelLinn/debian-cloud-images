@@ -1,0 +1,9 @@
+Types: deb
+URIs: https://deb.debian.org/debian-ports
+Suites: {%SUITE%}
+Components: main
+
+Types: deb-src
+URIs: https://deb.debian.org/debian
+Suites: {%SUITE%}
+Components: main
